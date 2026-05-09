@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AnomalyList } from "@/components/AnomalyList";
 import { DeskAssetHeatmap } from "@/components/Heatmap";
 import { StatCard } from "@/components/StatCard";
+import { StoryHero } from "@/components/StoryHero";
 import { detectAll } from "@/lib/anomaly";
 import {
   ACTIVITY,
@@ -45,6 +46,7 @@ export default function OverviewPage() {
 
   return (
     <div className="p-6 space-y-6">
+      <StoryHero />
       <header className="flex items-end justify-between">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Overview</h1>

@@ -4,10 +4,33 @@ import type {
   AssetClassCode,
   DailyActivity,
   Desk,
+  OrderType,
   Region,
   Trader,
   Venue,
 } from "./types";
+
+/** Per-asset order-type mix (must sum to ~1). Used to allocate trades. */
+export const ORDER_TYPE_MIX: Record<AssetClassCode, Partial<Record<OrderType, number>>> = {
+  EQ: { MARKET: 0.32, LIMIT: 0.34, MOC: 0.18, MOO: 0.06, VWAP: 0.07, TWAP: 0.03 },
+  FNO: { MARKET: 0.45, LIMIT: 0.4, BLOCK: 0.1, MOC: 0.05 },
+  CREDIT: { RFQ: 0.7, BLOCK: 0.2, AUCTION: 0.1 },
+  FX: { MARKET: 0.35, LIMIT: 0.2, RFQ: 0.2, TWAP: 0.15, VWAP: 0.1 },
+  COMM: { MARKET: 0.4, LIMIT: 0.25, BLOCK: 0.2, RFQ: 0.15 },
+  RATES: { RFQ: 0.55, AUCTION: 0.25, BLOCK: 0.2 },
+};
+
+export const ORDER_TYPES: OrderType[] = [
+  "MARKET",
+  "LIMIT",
+  "MOC",
+  "MOO",
+  "VWAP",
+  "TWAP",
+  "BLOCK",
+  "RFQ",
+  "AUCTION",
+];
 
 export const ASSET_CLASSES: AssetClass[] = [
   { code: "EQ", name: "Equities", color: "#3b82f6" },
@@ -270,14 +293,30 @@ function generate(): {
             break;
           }
         }
-        const key = `${chosenAsset}|${chosenVenue}`;
+        // Pick order type from per-asset mix.
+        const otMix = ORDER_TYPE_MIX[chosenAsset];
+        const otEntries = Object.entries(otMix) as [OrderType, number][];
+        let r3 = rng.next();
+        let chosenOrderType: OrderType = otEntries[0][0];
+        for (const [ot, p] of otEntries) {
+          r3 -= p;
+          if (r3 <= 0) {
+            chosenOrderType = ot;
+            break;
+          }
+        }
+        const key = `${chosenAsset}|${chosenVenue}|${chosenOrderType}`;
         buckets[key] = (buckets[key] ?? 0) + 1;
       }
 
       const injected = anomalyTargets.get(trader.id)?.find((x) => x.date === date);
 
       for (const [key, trades] of Object.entries(buckets)) {
-        const [assetClass, venue] = key.split("|") as [AssetClassCode, string];
+        const [assetClass, venue, orderType] = key.split("|") as [
+          AssetClassCode,
+          string,
+          OrderType,
+        ];
         let dayTrades = trades;
         let avgHour = t.hour + rng.normal(0, t.hourStd);
         let notional =
@@ -305,6 +344,7 @@ function generate(): {
           traderId: trader.id,
           assetClass,
           venue,
+          orderType,
           trades: dayTrades,
           notional,
           pnl,
@@ -329,11 +369,14 @@ function generate(): {
           const a = v.assetClasses.find((x) =>
             desk.assetClasses.includes(x)
           )!;
+          const otMix = ORDER_TYPE_MIX[a];
+          const otKeys = Object.keys(otMix) as OrderType[];
           activity.push({
             date,
             traderId: trader.id,
             assetClass: a,
             venue: v.code,
+            orderType: otKeys[0] ?? "MARKET",
             trades: rng.int(3, 9),
             notional: baseNotionalPerTrade * rng.int(3, 9),
             pnl: -Math.abs(rng.normal(0, baseNotionalPerTrade * 0.005)),
@@ -351,11 +394,14 @@ function generate(): {
         const a = rng.pick(otherAssets).code;
         const venue =
           VENUES.find((v) => v.assetClasses.includes(a))?.code ?? "OTC";
+        const otMix2 = ORDER_TYPE_MIX[a];
+        const otKeys2 = Object.keys(otMix2) as OrderType[];
         activity.push({
           date,
           traderId: trader.id,
           assetClass: a,
           venue,
+          orderType: otKeys2[0] ?? "MARKET",
           trades: rng.int(2, 6),
           notional: baseNotionalPerTrade * rng.int(2, 6),
           pnl: rng.normal(0, baseNotionalPerTrade * 0.005),

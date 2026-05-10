@@ -1,6 +1,17 @@
 export type AssetClassCode = "EQ" | "FNO" | "CREDIT" | "FX" | "COMM" | "RATES";
 export type RegionCode = "APAC" | "EMEA" | "AMRS";
 
+export type OrderType =
+  | "MARKET"
+  | "LIMIT"
+  | "MOC" // market on close
+  | "MOO" // market on open
+  | "VWAP"
+  | "TWAP"
+  | "BLOCK"
+  | "RFQ"
+  | "AUCTION";
+
 export interface AssetClass {
   code: AssetClassCode;
   name: string;
@@ -35,12 +46,13 @@ export interface Trader {
   startedAt: string; // ISO date
 }
 
-/** A daily aggregate of one trader's activity in a single (asset, venue) bucket. */
+/** A daily aggregate of one trader's activity in a single (asset, venue, orderType) bucket. */
 export interface DailyActivity {
   date: string; // YYYY-MM-DD
   traderId: string;
   assetClass: AssetClassCode;
   venue: string;
+  orderType: OrderType;
   trades: number;
   notional: number; // USD
   pnl: number; // USD

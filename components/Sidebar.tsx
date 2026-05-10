@@ -19,6 +19,17 @@ export function Sidebar() {
       </Link>
 
       <nav className="flex-1 overflow-y-auto py-2 text-sm">
+        <Section title="Tools">
+          <Link
+            href="/genie"
+            className="flex items-center gap-2 px-4 py-1.5 hover:bg-bg-hover"
+          >
+            <span className="w-2 h-2 rounded-full bg-up animate-pulse_dot" />
+            <span className="text-ink">Ask Genie</span>
+            <span className="ml-auto text-[10px] font-mono text-ink-dim">NL → SQL</span>
+          </Link>
+        </Section>
+
         <Section title="Asset Classes">
           {ASSET_CLASSES.map((a) => (
             <Link

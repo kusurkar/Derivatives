@@ -120,9 +120,31 @@ critical (≥5).
 - `/asset/[code]` — daily notional, top traders, venue mix, desks, anomalies
 - `/desk/[id]` — desk KPIs, trend, asset mix, trader table with per-trader
   PnL/anomaly counts, anomaly list
-- `/trader/[id]` — synthetic profile vs last-7d radar fingerprint, metric
-  table with z-scores, notional/PnL series with ±2.5σ bands, baseline
-  asset mix, anomalies
+- `/trader/[id]` — **Trader Health** hero band (ring score, ECG-style
+  waveform with anomaly blips, vital tiles, 14-day rhythm), then the
+  synthetic profile vs last-7d radar fingerprint, metric table with
+  z-scores, notional/PnL series with ±2.5σ bands, baseline asset mix,
+  anomalies
+- `/trader/[id]/health` — fullscreen "wall display" version of the health
+  view, no sidebar/ticker, designed for a TV on the control floor
+
+### Trader Health (Fitbit-style)
+A composite 0–100 health score per trader, with five zones:
+**Healthy ≥85 · Good ≥70 · Watch ≥55 · Stressed ≥40 · Critical <40**.
+
+Component weights (in `lib/health.ts`):
+- Volume stability (0.20) — mean |z| on daily notional vs baseline µ/σ
+- PnL stability (0.20) — mean |z| on daily PnL
+- Rhythm consistency (0.15) — mean |z| on volume-weighted trading hour
+- Venue focus (0.15) — total-variation distance of recent vs baseline
+  venue mix
+- Asset focus (0.10) — TV distance of recent vs baseline asset mix
+- Anomaly load (0.20) — severity-weighted penalty for anomalies in window
+
+The ECG-style waveform is pure SVG: each day in the 14-day window is a
+sinusoid whose amplitude scales with that day's activity; on anomaly
+days the trace runs through a QRS-complex spike whose height and color
+match the severity (yellow→orange→red→pink).
 
 The top **anomaly ticker** scrolls on every page and links each entry to
 the relevant trader.

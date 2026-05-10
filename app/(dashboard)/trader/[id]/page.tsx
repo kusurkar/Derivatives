@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnomalyList } from "@/components/AnomalyList";
+import { HealthBand } from "@/components/HealthBand";
 import { StatCard } from "@/components/StatCard";
 import { TimeSeries } from "@/components/TimeSeries";
 import {
@@ -20,6 +21,7 @@ import {
   getTrader,
 } from "@/lib/data";
 import { fmtNum, fmtPnl, fmtUsd, fmtZ } from "@/lib/format";
+import { buildHealth } from "@/lib/health";
 
 export function generateStaticParams() {
   return TRADERS.map((t) => ({ id: t.id }));
@@ -33,6 +35,7 @@ export default function TraderPage({ params }: { params: { id: string } }) {
   const trader = getTrader(params.id);
   if (!trader) notFound();
   const desk = getDesk(trader.deskId)!;
+  const health = buildHealth(trader.id)!;
   const profile = buildProfile(trader.id);
   const rollup = rollupTrader(trader.id);
   const anoms = detectForTrader(trader.id);
@@ -90,6 +93,8 @@ export default function TraderPage({ params }: { params: { id: string } }) {
           {trader.id} · {trader.seniority} · started {trader.startedAt}
         </div>
       </header>
+
+      <HealthBand health={health} traderName={trader.name} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Notional 90d" value={fmtUsd(totalNotional)} />

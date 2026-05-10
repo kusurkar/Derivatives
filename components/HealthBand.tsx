@@ -7,18 +7,25 @@ import { ZONE_COLOR, ZONE_LABEL, type TraderHealth } from "@/lib/health";
 
 interface Props {
   health: TraderHealth;
-  traderName: string;
-  /** Show the link to the fullscreen view. */
-  showFullscreenLink?: boolean;
+  /** Display name for the entity (trader name or system name). */
+  name: string;
+  /** Optional href to a fullscreen "wall" variant. */
+  wallHref?: string;
   /** Hide the surrounding panel chrome for the fullscreen page. */
   bare?: boolean;
+  /** Override the title shown in the panel header. */
+  title?: string;
+  /** Override the in-rhythm summary text for non-trader entities. */
+  summaryFn?: (h: TraderHealth) => string;
 }
 
 export function HealthBand({
   health,
-  traderName,
-  showFullscreenLink = true,
+  name,
+  wallHref,
   bare = false,
+  title = "Trader Health · last 14 days",
+  summaryFn = defaultSummary,
 }: Props) {
   const ringColor = ZONE_COLOR[health.zone];
   const inner = (
@@ -36,12 +43,12 @@ export function HealthBand({
               Status · {ZONE_LABEL[health.zone]}
             </div>
             <div className="text-lg font-semibold mt-0.5">
-              {summary(health)}
+              {summaryFn(health)}
             </div>
           </div>
-          {showFullscreenLink ? (
+          {wallHref ? (
             <Link
-              href={`/trader/${health.traderId}/health`}
+              href={wallHref}
               className="text-xs px-3 py-1.5 rounded border border-line hover:border-ink-muted text-ink-muted hover:text-ink"
             >
               Open wall view →
@@ -63,7 +70,7 @@ export function HealthBand({
       <div className="space-y-6">
         {inner}
         <RhythmBars series={health.series} />
-        <ComponentBreakdown health={health} traderName={traderName} />
+        <ComponentBreakdown health={health} name={name} />
       </div>
     );
   }
@@ -76,12 +83,12 @@ export function HealthBand({
             className="w-2 h-2 rounded-full animate-pulse_dot"
             style={{ background: ringColor }}
           />
-          <div className="panel-title">Trader Health · last 14 days</div>
+          <div className="panel-title">{title}</div>
         </div>
         <div className="text-[11px] text-ink-dim font-mono">
           {health.daysSinceAnomaly === Infinity
-            ? "no anomalies in window"
-            : `${health.daysSinceAnomaly}d since last anomaly`}
+            ? "no events in window"
+            : `${health.daysSinceAnomaly}d since last event`}
         </div>
       </div>
       <div className="p-6">{inner}</div>
@@ -89,7 +96,7 @@ export function HealthBand({
   );
 }
 
-function summary(health: TraderHealth): string {
+function defaultSummary(health: TraderHealth): string {
   const anomCount = health.anomalies.length;
   if (anomCount === 0) {
     return "In rhythm — no anomalies in the surveillance window.";
@@ -102,7 +109,7 @@ function ComponentBreakdown({
   health,
 }: {
   health: TraderHealth;
-  traderName: string;
+  name: string;
 }) {
   return (
     <div className="panel">

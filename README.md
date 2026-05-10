@@ -127,6 +127,17 @@ critical (≥5).
   anomalies
 - `/trader/[id]/health` — fullscreen "wall display" version of the health
   view, no sidebar/ticker, designed for a TV on the control floor
+- `/systems` — Trading Systems Health overview: 14 real-vendor-named
+  systems (Fidessa, Charles River, Bloomberg AIM, TT, FlexTrade, EMSX,
+  Calypso, Murex, Summit, Numerix, SMARTS, Actimize, MarkitWire, Traiana)
+  grouped by category (OMS / EMS / Booking & Risk / Pricing / Surveillance
+  / Confirmation & Recon) with a health-ring card per system and a
+  recent-incidents feed
+- `/system/[id]` — system detail: same Fitbit-style HealthBand hero
+  (ring + ECG + vital tiles) but vitals re-mapped to throughput / p99 /
+  error rate / uptime; throughput, p99, and error-rate time series
+  with ±σ bands; incident list
+- `/system/[id]/health` — fullscreen system wall display
 
 ### Trader Health (Fitbit-style)
 A composite 0–100 health score per trader, with five zones:
@@ -145,6 +156,32 @@ The ECG-style waveform is pure SVG: each day in the 14-day window is a
 sinusoid whose amplitude scales with that day's activity; on anomaly
 days the trace runs through a QRS-complex spike whose height and color
 match the severity (yellow→orange→red→pink).
+
+### System Health
+The same metaphor applies to trading systems. `lib/systemHealth.ts`
+returns the same shape as `TraderHealth`, so all five health components
+(`HealthRing`, `HeartbeatWaveform`, `VitalTile`, `RhythmBars`,
+`HealthBand`) are reused unchanged.
+
+System component scores re-purpose the trader scaffolding:
+
+| Trader component | → | System component |
+|---|---|---|
+| Volume stability | → | Throughput stability |
+| PnL stability    | → | Latency (p99) stability |
+| Rhythm consistency | → | Error stability |
+| Venue focus      | → | Availability (uptime) |
+| Asset focus      | → | Resource headroom (throughput CV) |
+| Anomaly load     | → | Incident load |
+
+Incidents are detected on system metrics with z-score thresholds plus
+hard rules (uptime <99% always flags, error rate ≥2% always flags as
+high or critical). Kinds: `LATENCY_SPIKE`, `ERROR_BURST`, `OUTAGE`,
+`THROUGHPUT_DROP`, `BATCH_LATE`.
+
+Bidirectional cross-linking between systems and traders is intentionally
+deferred to v2; the system catalog already records `assetClasses` and
+`region` so the linkage is straightforward to add.
 
 The top **anomaly ticker** scrolls on every page and links each entry to
 the relevant trader.

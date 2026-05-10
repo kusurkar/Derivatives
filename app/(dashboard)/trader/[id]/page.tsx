@@ -94,7 +94,11 @@ export default function TraderPage({ params }: { params: { id: string } }) {
         </div>
       </header>
 
-      <HealthBand health={health} traderName={trader.name} />
+      <HealthBand
+        health={health}
+        name={trader.name}
+        wallHref={`/trader/${trader.id}/health`}
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Notional 90d" value={fmtUsd(totalNotional)} />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AnomalyList } from "@/components/AnomalyList";
 import { DeskAssetHeatmap } from "@/components/Heatmap";
+import { DeskHealthCard } from "@/components/DeskHealthCard";
 import { FocusToggle, type Focus } from "@/components/FocusToggle";
 import { StatCard } from "@/components/StatCard";
 import { StoryHero } from "@/components/StoryHero";
@@ -133,6 +134,22 @@ function TradersFocus() {
           sub={`${anomalies.filter((a) => a.severity === "critical" || a.severity === "high").length} high+`}
         />
       </div>
+
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-ink-muted">
+            Desks Health
+          </h2>
+          <span className="text-[11px] font-mono text-ink-dim">
+            rollup of trader health per desk · click to drill in
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {DESKS.map((d) => (
+            <DeskHealthCard key={d.id} desk={d} />
+          ))}
+        </div>
+      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="panel">

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnomalyList } from "@/components/AnomalyList";
+import { HealthBand } from "@/components/HealthBand";
 import { StatCard } from "@/components/StatCard";
 import { TimeSeries } from "@/components/TimeSeries";
 import { detectAll } from "@/lib/anomaly";
@@ -12,6 +13,7 @@ import {
   getDesk,
   tradersForDesk,
 } from "@/lib/data";
+import { buildDeskHealth } from "@/lib/deskHealth";
 import { fmtNum, fmtPnl, fmtUsd } from "@/lib/format";
 import type { AssetClassCode } from "@/lib/types";
 
@@ -53,6 +55,7 @@ export default function DeskPage({ params }: { params: { id: string } }) {
 
   const traderIds = new Set(traders.map((t) => t.id));
   const anoms = detectAll().filter((a) => traderIds.has(a.traderId));
+  const deskHealth = buildDeskHealth(desk.id);
 
   return (
     <div className="p-6 space-y-6">
@@ -77,6 +80,25 @@ export default function DeskPage({ params }: { params: { id: string } }) {
           ))}
         </div>
       </header>
+
+      {deskHealth ? (
+        <HealthBand
+          health={deskHealth}
+          name={desk.name}
+          title="Desk Health · rollup of trader health"
+          summaryFn={(h) => {
+            const cnts = (deskHealth.zoneCounts ?? {}) as Record<string, number>;
+            const stressed = (cnts.stressed ?? 0) + (cnts.critical ?? 0);
+            const healthy = (cnts.great ?? 0) + (cnts.good ?? 0);
+            if (h.anomalies.length === 0) {
+              return `Desk in rhythm — ${healthy}/${deskHealth.traderCount} traders healthy.`;
+            }
+            return stressed > 0
+              ? `${stressed} trader${stressed === 1 ? "" : "s"} stressed · ${h.anomalies.length} anomalies this week`
+              : `${h.anomalies.length} anomalies this week across the desk`;
+          }}
+        />
+      ) : null}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Notional 90d" value={fmtUsd(totalNotional)} />

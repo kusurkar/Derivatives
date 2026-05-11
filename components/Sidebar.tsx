@@ -1,18 +1,11 @@
 import Link from "next/link";
 import { ASSET_CLASSES, DESKS, REGIONS } from "@/lib/data";
-import {
-  CATEGORY_COLOR,
-  CATEGORY_LABEL,
-  systemsByCategory,
-  type SystemCategory,
-} from "@/lib/systems";
 
 export function Sidebar() {
   const desksByRegion = REGIONS.map((r) => ({
     region: r,
     desks: DESKS.filter((d) => d.region === r.code),
   }));
-  const sysByCat = systemsByCategory();
   return (
     <aside className="w-64 shrink-0 border-r border-line bg-bg-panel/60 flex flex-col">
       <Link
@@ -43,38 +36,6 @@ export function Sidebar() {
             <span className="text-ink">Systems Health</span>
             <span className="ml-auto text-[10px] font-mono text-ink-dim">all</span>
           </Link>
-        </Section>
-
-        <Section title="Systems by Category">
-          {(Object.keys(CATEGORY_LABEL) as SystemCategory[]).map((cat) => {
-            const ss = sysByCat[cat];
-            if (ss.length === 0) return null;
-            return (
-              <div key={cat} className="mb-2">
-                <div className="px-4 py-1 text-[10px] uppercase tracking-widest text-ink-dim font-mono flex items-center gap-2">
-                  <span
-                    className="w-1.5 h-1.5 rounded-sm"
-                    style={{ background: CATEGORY_COLOR[cat] }}
-                  />
-                  {cat}
-                </div>
-                {ss.map((s) => (
-                  <Link
-                    key={s.id}
-                    href={`/system/${s.id}`}
-                    className="flex items-center gap-2 px-6 py-1 hover:bg-bg-hover"
-                  >
-                    <span className="font-mono text-[11px] text-ink-dim w-24 truncate">
-                      {s.id}
-                    </span>
-                    <span className="text-xs text-ink-muted truncate">
-                      {s.vendor}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            );
-          })}
         </Section>
 
         <Section title="Asset Classes">

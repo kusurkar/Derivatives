@@ -1,26 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HealthBand } from "@/components/HealthBand";
-import { TRADERS, getDesk, getTrader } from "@/lib/data";
-import { buildHealth, ZONE_COLOR, ZONE_LABEL } from "@/lib/health";
+import {
+  CATEGORY_LABEL,
+  SYSTEMS,
+  getSystem,
+} from "@/lib/systems";
+import { buildSystemHealth } from "@/lib/systemHealth";
+import { ZONE_COLOR, ZONE_LABEL } from "@/lib/health";
 
 export function generateStaticParams() {
-  return TRADERS.map((t) => ({ id: t.id }));
+  return SYSTEMS.map((s) => ({ id: s.id }));
 }
 
-/**
- * Fullscreen wall-display variant of the trader health view. No sidebar,
- * no ticker, no chrome — designed for a TV on the control floor.
- */
-export default function TraderHealthWallPage({
+export default function SystemHealthWallPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const trader = getTrader(params.id);
-  if (!trader) notFound();
-  const desk = getDesk(trader.deskId)!;
-  const health = buildHealth(trader.id)!;
+  const system = getSystem(params.id);
+  if (!system) notFound();
+  const health = buildSystemHealth(system.id)!;
   const color = ZONE_COLOR[health.zone];
 
   return (
@@ -28,15 +28,15 @@ export default function TraderHealthWallPage({
       <header className="flex items-center justify-between px-8 py-5 border-b border-line">
         <div>
           <div className="text-[11px] font-mono uppercase tracking-widest text-ink-dim">
-            DOTS · Trader Wall Display
+            DOTS · System Wall Display
           </div>
           <div className="flex items-baseline gap-3 mt-1">
-            <h1 className="text-2xl font-semibold">{trader.name}</h1>
-            <span className="text-sm font-mono text-ink-muted">{trader.id}</span>
+            <h1 className="text-2xl font-semibold">{system.name}</h1>
+            <span className="text-sm font-mono text-ink-muted">{system.id}</span>
             <span className="text-sm text-ink-muted">·</span>
-            <span className="text-sm text-ink-muted">{desk.name}</span>
+            <span className="text-sm text-ink-muted">{system.vendor}</span>
             <span className="text-[10px] font-mono uppercase tracking-widest text-ink-dim">
-              {desk.region}
+              {CATEGORY_LABEL[system.category]} · {system.region}
             </span>
           </div>
         </div>
@@ -57,7 +57,7 @@ export default function TraderHealthWallPage({
             </span>
           </div>
           <Link
-            href={`/trader/${trader.id}`}
+            href={`/system/${system.id}`}
             className="text-xs px-3 py-1.5 rounded border border-line hover:border-ink-muted text-ink-muted hover:text-ink"
           >
             ← Back to detail
@@ -66,15 +66,24 @@ export default function TraderHealthWallPage({
       </header>
 
       <main className="flex-1 p-8 space-y-6">
-        <HealthBand health={health} name={trader.name} bare />
+        <HealthBand
+          health={health}
+          name={system.name}
+          bare
+          summaryFn={(h) =>
+            h.anomalies.length === 0
+              ? "All clear — system within baseline thresholds."
+              : `${h.anomalies.length} incident${h.anomalies.length === 1 ? "" : "s"} this week — review the spikes on the trace.`
+          }
+        />
       </main>
 
       <footer className="px-8 py-3 border-t border-line text-[10px] text-ink-dim font-mono flex items-center justify-between">
         <span>
-          synthetic data · profile baseline excludes most recent 7 days
+          synthetic data · health baseline excludes most recent 7 days
         </span>
         <span>
-          {health.anomalies.length} anomalies · {health.daysSinceAnomaly === Infinity ? "—" : `${health.daysSinceAnomaly}d`} since last event
+          {health.anomalies.length} incidents · {health.daysSinceAnomaly === Infinity ? "—" : `${health.daysSinceAnomaly}d`} since last incident
         </span>
       </footer>
     </div>

@@ -139,6 +139,10 @@ interface TraderTendency {
   hourStd: number;
   assetMix: Record<AssetClassCode, number>;
   venueMix: Record<string, number>;
+  /** Fraction of orders that are client (vs house/proprietary), 0..1. */
+  clientShare: number;
+  /** Typical fraction of orders cancelled before fill, 0..1. */
+  cancelRate: number;
 }
 
 function softmax(weights: number[]): number[] {
@@ -180,6 +184,29 @@ function buildTraderTendency(
     Math.min(23, regionHour[desk.region] + rng.normal(0, 0.7))
   );
 
+  // Client share: agency desks (cash equities, FX) skew client; prop / market
+  // making desks (rates, FNO) skew house. Then jitter per trader.
+  const agencyDesks = new Set([
+    "EQ-NY", "EQ-LDN", "EQ-HK", "FX-LDN", "FX-SG",
+    "CREDIT-NY", "CREDIT-LDN",
+  ]);
+  const baseClientShare = agencyDesks.has(desk.id) ? 0.78 : 0.42;
+  const clientShare = Math.max(
+    0.05,
+    Math.min(0.98, baseClientShare + rng.normal(0, 0.12))
+  );
+  // Cancel rate: HFT-ish desks (FX EMS, Equities EMS) cancel more.
+  const baseCancelRate =
+    desk.id === "FX-LDN" || desk.id === "FX-SG"
+      ? 0.18
+      : desk.assetClasses.includes("EQ")
+      ? 0.14
+      : 0.06;
+  const cancelRate = Math.max(
+    0.005,
+    Math.min(0.4, baseCancelRate + rng.normal(0, 0.04))
+  );
+
   return {
     scale,
     pnlBias: rng.normal(0, 0.2),
@@ -188,6 +215,8 @@ function buildTraderTendency(
     hourStd: Math.max(0.3, rng.normal(0.8, 0.2)),
     assetMix,
     venueMix,
+    clientShare,
+    cancelRate,
   };
 }
 
@@ -339,6 +368,14 @@ function generate(): {
           // new_venue / asset_drift handled below as a separate row injection
         }
 
+        const clientShareDay = Math.max(
+          0,
+          Math.min(1, t.clientShare + rng.normal(0, 0.05))
+        );
+        const cancelRateDay = Math.max(
+          0,
+          Math.min(0.6, t.cancelRate + rng.normal(0, 0.02))
+        );
         activity.push({
           date,
           traderId: trader.id,
@@ -346,6 +383,8 @@ function generate(): {
           venue,
           orderType,
           trades: dayTrades,
+          clientTrades: Math.round(dayTrades * clientShareDay),
+          cancelledTrades: Math.round(dayTrades * cancelRateDay),
           notional,
           pnl,
           avgHourUtc: Math.max(0, Math.min(23.99, avgHour)),
@@ -371,14 +410,17 @@ function generate(): {
           )!;
           const otMix = ORDER_TYPE_MIX[a];
           const otKeys = Object.keys(otMix) as OrderType[];
+          const trd = rng.int(3, 9);
           activity.push({
             date,
             traderId: trader.id,
             assetClass: a,
             venue: v.code,
             orderType: otKeys[0] ?? "MARKET",
-            trades: rng.int(3, 9),
-            notional: baseNotionalPerTrade * rng.int(3, 9),
+            trades: trd,
+            clientTrades: Math.round(trd * t.clientShare),
+            cancelledTrades: Math.round(trd * t.cancelRate),
+            notional: baseNotionalPerTrade * trd,
             pnl: -Math.abs(rng.normal(0, baseNotionalPerTrade * 0.005)),
             avgHourUtc: t.hour,
           });
@@ -396,14 +438,17 @@ function generate(): {
           VENUES.find((v) => v.assetClasses.includes(a))?.code ?? "OTC";
         const otMix2 = ORDER_TYPE_MIX[a];
         const otKeys2 = Object.keys(otMix2) as OrderType[];
+        const trd2 = rng.int(2, 6);
         activity.push({
           date,
           traderId: trader.id,
           assetClass: a,
           venue,
           orderType: otKeys2[0] ?? "MARKET",
-          trades: rng.int(2, 6),
-          notional: baseNotionalPerTrade * rng.int(2, 6),
+          trades: trd2,
+          clientTrades: Math.round(trd2 * t.clientShare),
+          cancelledTrades: Math.round(trd2 * t.cancelRate),
+          notional: baseNotionalPerTrade * trd2,
           pnl: rng.normal(0, baseNotionalPerTrade * 0.005),
           avgHourUtc: t.hour,
         });

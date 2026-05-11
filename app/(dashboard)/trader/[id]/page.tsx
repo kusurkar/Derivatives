@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnomalyList } from "@/components/AnomalyList";
 import { HealthBand } from "@/components/HealthBand";
-import { StatCard } from "@/components/StatCard";
+import { OrderFlowPanel } from "@/components/OrderFlowPanel";
 import { TimeSeries } from "@/components/TimeSeries";
 import {
   TraderFingerprint,
@@ -40,11 +40,7 @@ export default function TraderPage({ params }: { params: { id: string } }) {
   const rollup = rollupTrader(trader.id);
   const anoms = detectForTrader(trader.id);
   const rows = activityForTrader(trader.id);
-
-  const totalNotional = rows.reduce((s, r) => s + r.notional, 0);
-  const totalPnl = rows.reduce((s, r) => s + r.pnl, 0);
-  const totalTrades = rows.reduce((s, r) => s + r.trades, 0);
-
+  void rows; // kept for future per-trader rollups
   const notionalSeries = rollup.totals.map((t) => ({
     date: t.date,
     value: t.notional,
@@ -100,20 +96,7 @@ export default function TraderPage({ params }: { params: { id: string } }) {
         wallHref={`/trader/${trader.id}/health`}
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Notional 90d" value={fmtUsd(totalNotional)} />
-        <StatCard
-          label="PnL 90d"
-          value={fmtPnl(totalPnl)}
-          tone={totalPnl >= 0 ? "up" : "down"}
-        />
-        <StatCard label="Trades 90d" value={fmtNum(totalTrades)} />
-        <StatCard
-          label="Open Anomalies"
-          value={fmtNum(anoms.length)}
-          tone={anoms.length > 0 ? "warn" : "neutral"}
-        />
-      </div>
+      <OrderFlowPanel traderId={trader.id} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="panel">

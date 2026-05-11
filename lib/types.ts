@@ -54,6 +54,10 @@ export interface DailyActivity {
   venue: string;
   orderType: OrderType;
   trades: number;
+  /** Subset of `trades` that were client orders (rest are house / proprietary). */
+  clientTrades: number;
+  /** Subset of `trades` that were cancelled before fill (counted in trades). */
+  cancelledTrades: number;
   notional: number; // USD
   pnl: number; // USD
   avgHourUtc: number; // 0..23, time-of-day mean

@@ -7,6 +7,7 @@ export type SystemCategory =
   | "EMS" // Execution Management
   | "BOOKING" // Risk / Booking
   | "PRICING" // Pricing / Quoting
+  | "ADS" // Authoritative Data Store (trade & reference)
   | "SURVEILLANCE" // Trade & comms surveillance
   | "RECON"; // Confirmation & reconciliation
 
@@ -15,6 +16,7 @@ export const CATEGORY_LABEL: Record<SystemCategory, string> = {
   EMS: "Execution Management",
   BOOKING: "Booking & Risk",
   PRICING: "Pricing",
+  ADS: "Authoritative Data Store",
   SURVEILLANCE: "Surveillance",
   RECON: "Confirmation & Recon",
 };
@@ -24,9 +26,37 @@ export const CATEGORY_COLOR: Record<SystemCategory, string> = {
   EMS: "#a855f7",
   BOOKING: "#f59e0b",
   PRICING: "#10b981",
+  ADS: "#0ea5e9",
   SURVEILLANCE: "#ec4899",
   RECON: "#06b6d4",
 };
+
+/** Pipeline stage that each system category sits on. */
+export type FlowStage = "ORIGINATION" | "BOOKING" | "ADS" | "DOWNSTREAM";
+
+export const STAGE_FOR_CATEGORY: Record<SystemCategory, FlowStage> = {
+  OMS: "ORIGINATION",
+  EMS: "ORIGINATION",
+  BOOKING: "BOOKING",
+  PRICING: "BOOKING",
+  ADS: "ADS",
+  SURVEILLANCE: "DOWNSTREAM",
+  RECON: "DOWNSTREAM",
+};
+
+export const STAGE_LABEL: Record<FlowStage, string> = {
+  ORIGINATION: "Origination",
+  BOOKING: "Booking & Pricing",
+  ADS: "Authoritative Data Store",
+  DOWNSTREAM: "Downstream",
+};
+
+export const STAGE_ORDER: FlowStage[] = [
+  "ORIGINATION",
+  "BOOKING",
+  "ADS",
+  "DOWNSTREAM",
+];
 
 export interface TradingSystem {
   id: string;
@@ -165,6 +195,30 @@ export const SYSTEMS: TradingSystem[] = [
     baselineThroughput: 2400,
     baselineP99Ms: 4,
     baselineErrorRate: 0.0008,
+  },
+  {
+    id: "ATLAS-TRD-STORE",
+    name: "Atlas Trade Store",
+    vendor: "In-house",
+    category: "ADS",
+    region: "GLOBAL",
+    assetClasses: [],
+    team: "Data Platform",
+    baselineThroughput: 1850,
+    baselineP99Ms: 85,
+    baselineErrorRate: 0.0012,
+  },
+  {
+    id: "EDM-REFDATA",
+    name: "Markit EDM Reference Hub",
+    vendor: "IHS Markit",
+    category: "ADS",
+    region: "GLOBAL",
+    assetClasses: [],
+    team: "Data Platform",
+    baselineThroughput: 620,
+    baselineP99Ms: 140,
+    baselineErrorRate: 0.0025,
   },
   {
     id: "SMARTS-SRV",
